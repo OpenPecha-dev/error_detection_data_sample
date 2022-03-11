@@ -1,4 +1,5 @@
 import re
+import csv
 from typing import DefaultDict
 import yaml
 from pathlib import Path
@@ -26,21 +27,27 @@ def get_context(chunk, type_):
 
     else:
         syls = get_syls(chunk)
-        if len(syls) >= 2:
+        if len(syls) >= 4:
             if type_ == 'left':
-                context = f"{''.join(syls[-2:])}"
+                context = f"{''.join(syls[-4:])}"
             else:
-                context = f"{''.join(syls[:2])}"
+                context = f"{''.join(syls[:4])}"
         else:
             context = chunk
     return context.strip()
+
+def clean_note(note_text):
+    noise_anns = ['«པེ་»', '«སྣར་»', '«སྡེ་»', '«ཅོ་»', '\(\d+\) ', ':']
+    for noise_ann in noise_anns:
+        note_text = re.sub(noise_ann, '', note_text)
+    return note_text
 
 def get_note_sample(prev_chunk, chunk, next_chunk):
     note_sample = ''
     prev_context = get_context(prev_chunk, type_= 'left')
     next_context = get_context(next_chunk, type_= 'right')
-    chunk = re.sub('\(\d+\) ', '', chunk)
-    note_sample = f'{prev_context}{chunk}{next_context}'
+    note = clean_note(chunk)
+    note_sample = f'{prev_context}{note}{next_context}'
     return note_sample
 
 def parse_notes(collated_text):
@@ -73,6 +80,17 @@ def get_notes_samples(collated_text, note_samples, text_id):
             note_samples[cur_text_note]['text_id']=text_id
     return note_samples
 
+def generate_csv_report(note_samples):
+    output_path = f"./data_samples.csv"
+    header = ["S.no", "Note", "Frequency", "Src Text"]
+    with open(output_path, "w", encoding="UTF8") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        for note_walker,(note, note_info) in enumerate(note_samples.items(),1):
+            data = [note_walker, note, note_info['count'], note_info['text_id']]
+            writer.writerow(data)
+
+
 if __name__ == "__main__":
     note_samples = {}
     collated_text_paths  = list(Path('./collated_text').iterdir())
@@ -85,6 +103,6 @@ if __name__ == "__main__":
     data_samples = {}
     for note, note_info in note_samples.items():
         data_samples[note] = dict(note_info)
-
     note_samples_yml = yaml.safe_dump(data_samples, default_flow_style=False,sort_keys=False,allow_unicode=True)
     Path('./data_samples.yml').write_text(note_samples_yml, encoding='utf-8')
+    generate_csv_report(note_samples)
