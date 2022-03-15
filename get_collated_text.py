@@ -12,7 +12,7 @@ def get_collated_text(text_id):
     
 
 if __name__ == "__main__":
-    collated_text = Path('./collated_text_list.txt').read_text(encoding='utf-8')
+    collated_text = Path('./batch_2_collated_text.txt').read_text(encoding='utf-8')
     collated_text_ids = collated_text.splitlines()
     for collated_text_id in collated_text_ids[11:]:
         collated_text = get_collated_text(collated_text_id)
