@@ -49,8 +49,11 @@ def get_default_option(prev_chunk):
             default_option = syls[-1]
     return default_option
 
-def get_note_options(default_option, chunk):
-    chunk = re.sub('\(\d+\)', '', chunk)
+def get_note_options(default_option, note_chunk):
+    note_chunk = re.sub('\(\d+\)', '', note_chunk)
+    if "+" in note_chunk:
+        default_option = ""
+    note_chunk = re.sub("\+", "", note_chunk)
     pub_mapping = {
         '«པེ་»': 'peking',
         '«པེ»': 'peking',
@@ -67,7 +70,7 @@ def get_note_options(default_option, chunk):
         'derge': '',
         'chone': ''
     }
-    note_parts = re.split('(«པེ་»|«སྣར་»|«སྡེ་»|«ཅོ་»|«པེ»|«སྣར»|«སྡེ»|«ཅོ»)', chunk)
+    note_parts = re.split('(«པེ་»|«སྣར་»|«སྡེ་»|«ཅོ་»|«པེ»|«སྣར»|«སྡེ»|«ཅོ»)', note_chunk)
     pubs = note_parts[1::2]
     notes = note_parts[2::2]
     for walker, (pub, note_part) in enumerate(zip(pubs, notes)):
@@ -78,23 +81,26 @@ def get_note_options(default_option, chunk):
                 note_options[pub_mapping[pub]] = notes[walker+1].replace('>', '')
             else:
                 note_options[pub_mapping[pub]] = notes[walker+2].replace('>', '')
-    if not note_options.get('derge', ''):
-        note_options['derge'] = default_option
-    if not note_options.get('narthang', ''):
-        note_options['narthang'] = default_option
-    if not note_options.get('peking', ''):
-        note_options['peking'] = default_option
-    if not note_options.get('chone', ''):
-        note_options['chone'] = default_option
+    for pub, note in note_options.items():
+        if "-" in note:
+            note_options[pub] = ""
+        if not note:
+            note_options[pub] = default_option
     return note_options
 
-def get_note_sample(prev_chunk, chunk, next_chunk):
+def update_left_context(default_option, prev_chunk, chunk):
+    left_context = re.sub(f'{default_option}$', '', prev_chunk)
+    if "+" in chunk:
+        left_context = prev_chunk
+    return left_context
+        
+def get_note_sample(prev_chunk, note_chunk, next_chunk):
     note_sample = ''
     default_option = get_default_option(prev_chunk)
-    prev_chunk = re.sub(f'{default_option}$', '', prev_chunk)
+    prev_chunk = update_left_context(default_option, prev_chunk, note_chunk)
     prev_context = get_context(prev_chunk, type_= 'left')
     next_context = get_context(next_chunk, type_= 'right')
-    note_options = get_note_options(default_option, chunk)
+    note_options = get_note_options(default_option, note_chunk)
     note_options = dict(sorted(note_options.items()))
     note_sample = f'{prev_context}[{",".join(str(note) for note in note_options.values())}]{next_context}'
     return [note_sample, note_options]
