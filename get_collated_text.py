@@ -17,6 +17,7 @@ if __name__ == "__main__":
     collated_text_list.sort()
     collated_text_list = [text_id.stem[:-5] for text_id in collated_text_list]
     collated_text_ids = collated_text.splitlines()
+    collated_text_ids = ["D1829"]
     for collated_text_id in collated_text_ids:
         if collated_text_id in collated_text_list:
             continue
