@@ -24,11 +24,11 @@ def get_context(chunk, type_):
     chunk = chunk.replace(':', '')
     context = ''
     syls = get_syls(chunk)
-    if len(syls) >= 4:
+    if len(syls) >= 10:
         if type_ == 'left':
-            context = f"{''.join(syls[-4:])}"
+            context = f"{''.join(syls[-10:])}"
         else:
-            context = f"{''.join(syls[:4])}"
+            context = f"{''.join(syls[:10])}"
     else:
         context = chunk
     return context.strip()
@@ -185,7 +185,7 @@ def generate_csv_report(note_samples):
 
 if __name__ == "__main__":
     note_samples = {}
-    collated_text_paths  = list(Path('./collated_text').iterdir())
+    collated_text_paths  = list(Path('./collated_text_without_title_note').iterdir())
     collated_text_paths.sort()
     for collated_text_path in collated_text_paths:
         collated_text = collated_text_path.read_text(encoding='utf-8')
