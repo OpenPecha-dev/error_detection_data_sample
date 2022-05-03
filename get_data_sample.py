@@ -3,6 +3,7 @@ import csv
 from typing import DefaultDict
 import yaml
 from pathlib import Path
+from botok.third_party.has_skrt_syl import has_skrt_syl
 
 
 def get_syls(text):
@@ -97,6 +98,8 @@ def update_left_context(default_option, prev_chunk, chunk):
 def get_note_sample(prev_chunk, note_chunk, next_chunk):
     note_sample = ''
     default_option = get_default_option(prev_chunk)
+    if has_skrt_syl(default_option):
+        return ['', []]
     prev_chunk = update_left_context(default_option, prev_chunk, note_chunk)
     prev_context = get_context(prev_chunk, type_= 'left')
     next_context = get_context(next_chunk, type_= 'right')
@@ -116,7 +119,8 @@ def parse_notes(collated_text):
             next_chunk = ''
         if re.search('\(\d+\) <.+?>', chunk):
             note_sample, note_options  = get_note_sample(prev_chunk, chunk, next_chunk)
-            cur_text_notes.append([note_sample, note_options])
+            if note_sample:
+                cur_text_notes.append([note_sample, note_options])
             continue
         prev_chunk = chunk
     return cur_text_notes
@@ -173,7 +177,7 @@ def get_sample_entry(note_walker, note, note_info):
     return data_entry
 
 def generate_csv_report(note_samples):
-    output_path = f"./data_samples.csv"
+    output_path = f"./ludup_data_samples.csv"
     header = ["S.no", 'ཐག་གཅོད།་', "Left context", 'སྡེ།', 'ཅོ།', 'པེ།', 'སྣར།', 'Right context', 'ལེགས་སྦྱར།', 'བརྡ་རྙིང་།', 'བརྡ་གསར།', 'ལྡབ་ལོག།', "Frequency", "Src Text"]
     with open(output_path, "w", encoding="UTF8") as f:
         writer = csv.writer(f)
@@ -185,16 +189,18 @@ def generate_csv_report(note_samples):
 
 if __name__ == "__main__":
     note_samples = {}
-    collated_text_paths  = list(Path('./collated_text_without_title_note').iterdir())
+    collated_text_paths  = list(Path('./ludup_text').iterdir())
+    ludup_texts = Path('./ludup_text.txt').read_text(encoding='utf-8').splitlines()
     collated_text_paths.sort()
-    for collated_text_path in collated_text_paths:
-        collated_text = collated_text_path.read_text(encoding='utf-8')
+    for text_walker, collated_text_path in enumerate(collated_text_paths,1):
         text_id = collated_text_path.stem
-        note_samples = get_notes_samples(collated_text, note_samples, text_id)
-        print(f'{collated_text_path.stem} completed..')
+        if text_id[:-5] in ludup_texts:
+            collated_text = collated_text_path.read_text(encoding='utf-8')
+            note_samples = get_notes_samples(collated_text, note_samples, text_id)
+            print(f'{collated_text_path.stem} completed..')
     data_samples = {}
     for note, note_info in note_samples.items():
         data_samples[note] = dict(note_info)
-    note_samples_yml = yaml.safe_dump(data_samples, default_flow_style=False,sort_keys=False,allow_unicode=True)
-    Path('./data_samples.yml').write_text(note_samples_yml, encoding='utf-8')
+    # note_samples_yml = yaml.safe_dump(data_samples, default_flow_style=False,sort_keys=False,allow_unicode=True)
+    # Path('./data_samples.yml').write_text(note_samples_yml, encoding='utf-8')
     generate_csv_report(note_samples)
